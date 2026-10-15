@@ -151,3 +151,6 @@ vite.config.ts.timestamp-*
 # personal
 .claude/settings.local.json
 .idea
+
+# Local sound config (copy of .env.example)
+notify-sound.env
