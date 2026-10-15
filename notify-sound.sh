@@ -95,14 +95,51 @@ play() {
   fi
 }
 
+# Bundle id of the app Claude Code runs in (terminal or IDE), so clicking the
+# banner brings it to the front. macOS sets __CFBundleIdentifier for processes
+# launched from an app; TERM_PROGRAM is the fallback.
+host_app() {
+  if [ -n "$__CFBundleIdentifier" ]; then
+    printf '%s' "$__CFBundleIdentifier"
+    return
+  fi
+  case "$TERM_PROGRAM" in
+    Apple_Terminal) printf 'com.apple.Terminal' ;;
+    iTerm.app)      printf 'com.googlecode.iterm2' ;;
+    vscode)         printf 'com.microsoft.VSCode' ;;
+    WarpTerminal)   printf 'dev.warp.Warp-Stable' ;;
+    ghostty)        printf 'com.mitchellh.ghostty' ;;
+  esac
+}
+
 banner() {
-  command -v osascript >/dev/null 2>&1 || return
-  project=$(field '.cwd')
-  project=$(basename "${project:-$PWD}")
-  # Strip quotes/backslashes (they break the AppleScript string) and markdown
-  # markup, flatten newlines, and keep it short enough for a banner
+  cwd=$(field '.cwd')
+  cwd="${cwd:-$PWD}"
+  project=$(basename "$cwd")
+  # Strip quotes/backslashes and markdown markup, flatten newlines, and keep it
+  # short enough for a banner
   clean() { printf '%s' "$1" | tr -d '"\\*`#' | tr '\n' ' ' | tr -s ' ' | cut -c1-200; }
-  osascript -e "display notification \"$(clean "$1")\" with title \"Claude Code\" subtitle \"$(clean "$project")\""
+  text=$(clean "$1")
+
+  if command -v terminal-notifier >/dev/null 2>&1; then
+    app=$(host_app)
+    set -- -title "Claude Code" -subtitle "$project" -message "$text" \
+      -group "claude-code-$(field '.session_id')"
+    case "$app" in
+      com.jetbrains.*)
+        # Open the project folder: the IDE focuses that project's window
+        quoted_cwd="'$(printf '%s' "$cwd" | sed "s/'/'\\\\''/g")'"
+        set -- "$@" -execute "open -b $app $quoted_cwd" ;;
+      ?*)
+        set -- "$@" -activate "$app" ;;
+    esac
+    # Fails (exit 3) if notifications are not allowed for terminal-notifier
+    terminal-notifier "$@" && return
+  fi
+  if command -v osascript >/dev/null 2>&1; then
+    # Fallback: clicking this banner opens Script Editor, not the terminal/IDE
+    osascript -e "display notification \"$text\" with title \"Claude Code\" subtitle \"$(clean "$project")\""
+  fi
 }
 
 # Run in the background so the hook returns immediately

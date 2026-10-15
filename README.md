@@ -2,7 +2,15 @@
 
 Extension for Claude Code: plays a sound (and, on macOS, shows a notification banner) when Claude asks you a question, asks permission to run a tool, or has finished. Each case has its own sound.
 
-The banner shows the project folder and the text of Claude's message: the question it is asking, the command it wants to run, or the start of its last reply. On macOS it appears as coming from Script Editor; if you don't see it, enable notifications for Script Editor in System Settings → Notifications.
+The banner shows the project folder and the text of Claude's message: the question it is asking, the command it wants to run, or the start of its last reply.
+
+**Click to return to Claude.** With [`terminal-notifier`](https://github.com/julienXX/terminal-notifier) installed (`brew install terminal-notifier`), clicking the banner brings you back to the app Claude Code runs in: Terminal, iTerm2, VS Code, Warp, Ghostty, or a JetBrains IDE (PyCharm, IntelliJ, …), where it focuses the window of that project. Each session keeps a single banner, replaced by the newest one. Without `terminal-notifier` the script falls back to `osascript`, whose banner opens Script Editor when clicked. If terminal-notifier's banners don't appear (it prints `Notifications are not allowed for this application` and isn't listed in System Settings → Notifications), launch it once as an app so macOS asks for permission, then click Allow:
+
+```sh
+open "$(brew --prefix terminal-notifier)/terminal-notifier.app" --args -message "Hello"
+```
+
+Until then, the script falls back to the `osascript` banner.
 
 | Event | When it fires | Default sound (macOS) |
 |---|---|---|
@@ -15,7 +23,8 @@ The banner shows the project folder and the text of Claude's message: the questi
 
 - [Claude Code](https://claude.com/claude-code) CLI
 - macOS (`afplay`, built in) or Linux (`paplay` or `aplay`). Elsewhere it falls back to the terminal bell.
-- `jq` (optional but recommended: without it the banner shows generic text and both cases use the same sound)
+- `jq` (optional but recommended: without it the banner shows generic text and questions and permission requests use the same sound)
+- `terminal-notifier` (optional, macOS: makes the banner clickable)
 
 ## Setup
 
